@@ -1,0 +1,193 @@
+.app {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.canvas-container {
+  flex: 1;
+  width: 100%;
+  min-height: 0; /* Prevent canvas from pushing controls off screen */
+}
+
+.controls {
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); /* Handle notch/home bar */
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.9);
+  flex-shrink: 0; /* Prevent controls from shrinking */
+}
+
+.text-input {
+  flex: 1;
+  max-width: 400px;
+  padding: 12px 16px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  outline: none;
+}
+
+.text-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.text-input:focus {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.controls button {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: #646cff;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.controls button:hover:not(:disabled) {
+  background: #535bf2;
+}
+
+.controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.response-bubble {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 500px;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  border-radius: 20px;
+  font-size: 16px;
+  line-height: 1.5;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.text-input:disabled {
+  opacity: 0.5;
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100vh;
+  background: rgba(20, 20, 30, 0.95);
+  z-index: 999;
+  padding: 80px 20px 20px;
+  transition: left 0.3s ease;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar h3 {
+  color: white;
+  margin: 0 0 20px;
+}
+
+.avatar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.avatar-option {
+  padding: 14px 18px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  cursor: pointer;
+}
+
+.avatar-option.selected {
+  background: rgba(100, 108, 255, 0.3);
+  border-color: #646cff;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .controls {
+    padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+  }
+
+  .text-input {
+    min-width: 0;
+    padding: 14px 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  .controls button {
+    padding: 14px 16px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .sidebar-toggle {
+    top: 10px;
+    left: 10px;
+    width: 40px;
+    height: 40px;
+  }
+}
