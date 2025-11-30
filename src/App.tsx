@@ -3,8 +3,45 @@ import './App.css'
 import { Scene } from './components/Scene'
 import { textToSpeechWithTimestamps, type AlignmentChar } from './services/elevenLabs'
 import { chat, type Message } from './services/openai'
-import { transcribeAudio } from './services/whisper'
 import type { Emotion } from './constants'
+
+// Web Speech API types
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList
+}
+
+interface SpeechRecognitionResultList {
+  length: number
+  [index: number]: SpeechRecognitionResult
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean
+  [index: number]: SpeechRecognitionAlternative
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string
+  confidence: number
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  start(): void
+  stop(): void
+  onresult: ((event: SpeechRecognitionEvent) => void) | null
+  onend: (() => void) | null
+  onerror: ((event: Event) => void) | null
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition
+    webkitSpeechRecognition: new () => SpeechRecognition
+  }
+}
 
 function App() {
   const [speak, setSpeak] = useState(false)
@@ -14,20 +51,18 @@ function App() {
   const [alignment, setAlignment] = useState<AlignmentChar[]>([])
   const [emotion, setEmotion] = useState<Emotion>('neutral')
   const [status, setStatus] = useState<string>('')
+  const [transcript, setTranscript] = useState<string>('')
 
   const conversationHistory = useRef<Message[]>([])
   const emotionTimeoutRef = useRef<number | null>(null)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
-  const streamRef = useRef<MediaStream | null>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
-  const silenceCheckRef = useRef<number | null>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
 
   const handleSend = async (userMessage: string) => {
     if (!userMessage.trim() || loading || speak) return
 
     setLoading(true)
     setStatus('Thinking...')
+    setTranscript('')
 
     // Clear any pending emotion reset
     if (emotionTimeoutRef.current) {
@@ -49,7 +84,7 @@ function App() {
       )
 
       // Step 2: Convert AI response to speech with Eleven Labs (with emotion)
-      setStatus('Speaking...')
+      setStatus('')
       const ttsResponse = await textToSpeechWithTimestamps(response.text, response.emotion)
       setAudioUrl(ttsResponse.audioUrl)
       setAlignment(ttsResponse.alignment)
@@ -79,133 +114,74 @@ function App() {
     }, 5000)
   }, [audioUrl])
 
-  const stopRecording = useCallback(async () => {
-    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') return
-
-    setIsRecording(false)
-    setStatus('Processing...')
-
-    // Stop silence detection
-    if (silenceCheckRef.current) {
-      cancelAnimationFrame(silenceCheckRef.current)
-      silenceCheckRef.current = null
-    }
-
-    // Stop the media recorder
-    mediaRecorderRef.current.stop()
-
-    // Stop all tracks
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop())
-      streamRef.current = null
-    }
-  }, [])
-
-  const startRecording = async () => {
+  const startListening = () => {
     if (loading || speak || isRecording) return
 
-    try {
-      // Request microphone permission
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 
-      // Set up audio analyser for silence detection
-      const audioContext = new AudioContext()
-      const source = audioContext.createMediaStreamSource(stream)
-      const analyser = audioContext.createAnalyser()
-      analyser.fftSize = 256
-      source.connect(analyser)
-      analyserRef.current = analyser
+    if (!SpeechRecognition) {
+      setStatus('Speech recognition not supported')
+      setTimeout(() => setStatus(''), 2000)
+      return
+    }
 
-      // Create media recorder
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
-      mediaRecorderRef.current = mediaRecorder
-      audioChunksRef.current = []
+    const recognition = new SpeechRecognition()
+    recognitionRef.current = recognition
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data)
-        }
-      }
+    recognition.continuous = false
+    recognition.interimResults = true
+    recognition.lang = 'en-US'
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const result = event.results[event.results.length - 1]
+      const text = result[0].transcript
 
-        if (audioBlob.size > 0) {
-          try {
-            // Transcribe with Whisper
-            const transcribedText = await transcribeAudio(audioBlob)
-            console.log('Transcribed:', transcribedText)
+      // Show interim results
+      setTranscript(text)
 
-            if (transcribedText.trim()) {
-              // Send to chat
-              await handleSend(transcribedText)
-            } else {
-              setStatus('')
-            }
-          } catch (error) {
-            console.error('Transcription error:', error)
-            setStatus('Could not hear you')
-            setTimeout(() => setStatus(''), 2000)
-          }
+      // When final, send to chat
+      if (result.isFinal) {
+        setIsRecording(false)
+        if (text.trim()) {
+          handleSend(text)
         } else {
-          setStatus('')
+          setTranscript('')
         }
-
-        audioContext.close()
       }
+    }
 
-      // Start recording
-      mediaRecorder.start()
-      setIsRecording(true)
-      setStatus('Listening...')
-
-      // Silence detection
-      const dataArray = new Uint8Array(analyser.frequencyBinCount)
-      let silenceStart: number | null = null
-
-      const checkSilence = () => {
-        if (!isRecording && mediaRecorderRef.current?.state !== 'recording') return
-
-        analyser.getByteFrequencyData(dataArray)
-        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-
-        if (average < 10) {
-          // Silence detected
-          if (!silenceStart) {
-            silenceStart = Date.now()
-          } else if (Date.now() - silenceStart > 1500) {
-            // 1.5 seconds of silence - stop recording
-            stopRecording()
-            return
-          }
-        } else {
-          // Sound detected - reset silence timer
-          silenceStart = null
-        }
-
-        silenceCheckRef.current = requestAnimationFrame(checkSilence)
+    recognition.onend = () => {
+      setIsRecording(false)
+      if (!transcript && !loading) {
+        setStatus('')
       }
+    }
 
-      // Start silence detection after a short delay to let user start speaking
-      setTimeout(() => {
-        if (mediaRecorderRef.current?.state === 'recording') {
-          checkSilence()
-        }
-      }, 500)
-
-    } catch (error) {
-      console.error('Microphone error:', error)
-      setStatus('Microphone access denied')
+    recognition.onerror = () => {
+      setIsRecording(false)
+      setStatus('Could not hear you')
       setTimeout(() => setStatus(''), 2000)
     }
+
+    recognition.start()
+    setIsRecording(true)
+    setStatus('Listening...')
+    setTranscript('')
+  }
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      recognitionRef.current = null
+    }
+    setIsRecording(false)
   }
 
   const handleVoiceButtonClick = () => {
     if (isRecording) {
-      stopRecording()
+      stopListening()
     } else {
-      startRecording()
+      startListening()
     }
   }
 
@@ -239,7 +215,9 @@ function App() {
             </svg>
           )}
         </button>
-        {status && <span className="status-text">{status}</span>}
+        <span className="status-text">
+          {transcript || status}
+        </span>
       </div>
     </div>
   )
