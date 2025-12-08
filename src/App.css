@@ -70,11 +70,40 @@
   }
 }
 
+/* Clothing Toggle Button */
+.clothing-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+
+.clothing-toggle:hover {
+  background: rgba(0, 0, 0, 0.85);
+  transform: scale(1.02);
+}
+
 /* Mobile Styles */
 @media (max-width: 768px) {
   .voice-button {
     bottom: 30px;
     width: 70px;
     height: 70px;
+  }
+
+  .clothing-toggle {
+    top: 10px;
+    right: 10px;
+    padding: 10px 16px;
+    font-size: 12px;
   }
 }

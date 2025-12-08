@@ -50,6 +50,7 @@ function App() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [alignment, setAlignment] = useState<AlignmentChar[]>([])
   const [emotion, setEmotion] = useState<Emotion>('neutral')
+  const [showClothing, setShowClothing] = useState(true)
 
   const conversationHistory = useRef<Message[]>([])
   const emotionTimeoutRef = useRef<number | null>(null)
@@ -160,6 +161,7 @@ function App() {
           speak={speak}
           emotion={emotion}
           onSpeakEnd={handleSpeakEnd}
+          showClothing={showClothing}
         />
       </div>
       <button
@@ -177,6 +179,12 @@ function App() {
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
           </svg>
         )}
+      </button>
+      <button
+        className="clothing-toggle"
+        onClick={() => setShowClothing(!showClothing)}
+      >
+        {showClothing ? 'Remove Clothing' : 'Add Clothing'}
       </button>
     </div>
   )

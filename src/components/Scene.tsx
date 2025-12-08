@@ -11,9 +11,10 @@ interface SceneProps {
   speak: boolean
   emotion: Emotion
   onSpeakEnd: () => void
+  showClothing: boolean
 }
 
-export function Scene({ audioUrl, alignment, speak, emotion, onSpeakEnd }: SceneProps) {
+export function Scene({ audioUrl, alignment, speak, emotion, onSpeakEnd, showClothing }: SceneProps) {
   return (
     <Canvas camera={{ position: [0, 1, 3], fov: 50 }}>
       <ambientLight intensity={0.5} />
@@ -25,6 +26,7 @@ export function Scene({ audioUrl, alignment, speak, emotion, onSpeakEnd }: Scene
           speak={speak}
           emotion={emotion}
           onSpeakEnd={onSpeakEnd}
+          showClothing={showClothing}
           position={[0, -1, 0]}
         />
       </Suspense>
