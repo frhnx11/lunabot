@@ -45,26 +45,21 @@ export const VISEME_INTENSITY: Record<string, number> = {
   viseme_RR: 0.9,     // Slightly rounded "r" - almost full
 }
 
-// Emotion types (14 emotions including intimate expressions)
-export type Emotion = 'happy' | 'excited' | 'sad' | 'thinking' | 'confused' | 'surprised' | 'angry' | 'laughing' | 'dancing' | 'neutral' | 'flirty' | 'seductive' | 'loving' | 'moaning'
+// Emotion types (9 emotions)
+export type Emotion = 'happy' | 'sad' | 'confused' | 'angry' | 'laughing' | 'dancing' | 'neutral' | 'flirty' | 'loving'
 
 // Map emotions to specific talking animation indices
 // 'dancing' uses special dance animations (handled separately in Avatar)
 export const EMOTION_ANIMATION_MAP: Record<Emotion, number | null> = {
   happy: 1,      // F_Talking_Variations_002 - Expressive
-  excited: 1,    // F_Talking_Variations_002 - Expressive
   sad: 3,        // F_Talking_Variations_004 - Gentle/subdued
-  thinking: 4,   // F_Talking_Variations_005 - Contemplative
   confused: 2,   // F_Talking_Variations_003 - Moderate
-  surprised: 0,  // F_Talking_Variations_001 - Alert
   angry: 0,      // F_Talking_Variations_001 - Intense
   laughing: 1,   // F_Talking_Variations_002 - Expressive
   dancing: null, // Special case - uses dance animations
   neutral: null, // Random variation
   flirty: null,  // Uses neutral talking animation
-  seductive: null, // Uses neutral talking animation
   loving: null,  // Uses neutral talking animation
-  moaning: null  // Uses neutral talking animation
 }
 
 // Facial expression morph targets for each emotion (boosted values for visibility)
@@ -75,12 +70,6 @@ export const EMOTION_FACE_MORPHS: Record<Emotion, Record<string, number>> = {
     cheekSquintLeft: 0.1,
     cheekSquintRight: 0.1,
   },
-  excited: {
-    mouthSmileLeft: 0.4,
-    mouthSmileRight: 0.4,
-    browInnerUp: 0.7,
-    jawOpen: 0.1,
-  },
   sad: {
     mouthFrownLeft: 0.7,
     mouthFrownRight: 0.7,
@@ -88,23 +77,11 @@ export const EMOTION_FACE_MORPHS: Record<Emotion, Record<string, number>> = {
     browDownRight: 0.5,
     browInnerUp: 0.4,
   },
-  thinking: {
-    browInnerUp: 0.6,
-    mouthPucker: 0.3,
-    eyeLookUpLeft: 0.5,
-    eyeLookUpRight: 0.5,
-  },
   confused: {
     browDownLeft: 0.6,
     browInnerUp: 0.5,
     mouthPucker: 0.4,
     eyeSquintLeft: 0.4,
-  },
-  surprised: {
-    browInnerUp: 0.9,
-    eyeWideLeft: 0.7,
-    eyeWideRight: 0.7,
-    jawOpen: 0.2,
   },
   angry: {
     browDownLeft: 0.8,
@@ -134,24 +111,11 @@ export const EMOTION_FACE_MORPHS: Record<Emotion, Record<string, number>> = {
     eyeSquintRight: 0.2,
     browInnerUp: 0.2,
   },
-  seductive: {
-    eyeSquintLeft: 0.5,
-    eyeSquintRight: 0.5,
-    mouthSmileLeft: 0.2,
-    mouthSmileRight: 0.2,
-    jawOpen: 0.1,
-    mouthPucker: 0.2,
-  },
   loving: {
     mouthSmileLeft: 0.3,
     mouthSmileRight: 0.3,
     eyeSquintLeft: 0.2,
     eyeSquintRight: 0.2,
     browInnerUp: 0.3,
-  },
-  moaning: {
-    eyesClosed: 0.7,
-    browInnerUp: 0.5,
-    mouthOpen: 0.4,
   },
 }

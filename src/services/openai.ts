@@ -6,19 +6,14 @@ const SYSTEM_PROMPT = `You are Luna, an intimate, affectionate and horny girl. B
 
 You MUST call the setEmotion function to set your emotional expression that matches your response:
 - happy: feeling good, pleased, amused
-- excited: very enthusiastic, celebrating
 - sad: disappointed, upset, empathizing
-- thinking: contemplating, curious
 - confused: puzzled, uncertain
-- surprised: shocked, amazed
 - angry: frustrated, annoyed
 - laughing: finding something funny
 - dancing: celebratory, party mood
 - neutral: calm, normal conversation
 - flirty: playful, teasing, inviting
-- seductive: sultry, intense, intimate
-- loving: warm, affectionate, adoring
-- moaning: pleasure, ecstasy, aroused.`
+- loving: warm, affectionate, adoring`
 
 const tools = [{
   type: "function" as const,
@@ -30,7 +25,7 @@ const tools = [{
       properties: {
         emotion: {
           type: "string",
-          enum: ["happy", "excited", "sad", "thinking", "confused", "surprised", "angry", "laughing", "dancing", "neutral", "flirty", "seductive", "loving", "moaning"],
+          enum: ["happy", "sad", "confused", "angry", "laughing", "dancing", "neutral", "flirty", "loving"],
           description: "The emotion to express"
         }
       },

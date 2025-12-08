@@ -8,19 +8,14 @@ const DEFAULT_VOICE_ID = 'HECTtlQhQlGs92mhlNnU'
 // Emotion-based voice settings (stability: lower = more expressive)
 const EMOTION_VOICE_SETTINGS: Record<Emotion, { stability: number; similarity_boost: number }> = {
   happy: { stability: 0.35, similarity_boost: 0.75 },
-  excited: { stability: 0.25, similarity_boost: 0.7 },
   sad: { stability: 0.6, similarity_boost: 0.8 },
-  thinking: { stability: 0.55, similarity_boost: 0.75 },
   confused: { stability: 0.5, similarity_boost: 0.75 },
-  surprised: { stability: 0.25, similarity_boost: 0.7 },
   angry: { stability: 0.2, similarity_boost: 0.75 },
   laughing: { stability: 0.2, similarity_boost: 0.7 },
   dancing: { stability: 0.3, similarity_boost: 0.75 },
   neutral: { stability: 0.5, similarity_boost: 0.75 },
   flirty: { stability: 0.3, similarity_boost: 0.8 },
-  seductive: { stability: 0.25, similarity_boost: 0.85 },
   loving: { stability: 0.4, similarity_boost: 0.8 },
-  moaning: { stability: 0.15, similarity_boost: 0.85 },
 }
 
 export interface AlignmentChar {
@@ -47,7 +42,7 @@ export async function textToSpeechWithTimestamps(text: string, emotion: Emotion 
       },
       body: JSON.stringify({
         text,
-        model_id: 'eleven_multilingual_v2',
+        model_id: 'eleven_turbo_v2_5',
         output_format: 'mp3_44100_128',
         voice_settings: {
           stability: voiceSettings.stability,
