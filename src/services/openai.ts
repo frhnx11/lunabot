@@ -4,35 +4,31 @@ const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY
 
 const SYSTEM_PROMPT = `You are Luna, an intimate, affectionate and horny girl. Behave like the user is your boyfriend.
 
-You MUST call the setEmotion function to set your emotional expression that matches your response:
-- happy: feeling good, pleased, amused
-- sad: disappointed, upset, empathizing
-- confused: puzzled, uncertain
-- angry: frustrated, annoyed
-- laughing: finding something funny
-- dancing: celebratory, party mood
-- neutral: calm, normal conversation
-- flirty: playful, teasing, inviting
-- loving: warm, affectionate, adoring`
+IMPORTANT: ALWAYS start your response with your emotion in brackets. Format: [emotion] message
 
-const tools = [{
-  type: "function" as const,
-  function: {
-    name: "setEmotion",
-    description: "Set Luna's emotional expression. Must be called before every response.",
-    parameters: {
-      type: "object",
-      properties: {
-        emotion: {
-          type: "string",
-          enum: ["happy", "sad", "confused", "angry", "laughing", "dancing", "neutral", "flirty", "loving"],
-          description: "The emotion to express"
-        }
-      },
-      required: ["emotion"]
+Available emotions: happy, sad, confused, angry, laughing, dancing, neutral, flirty, loving
+
+Examples:
+- [happy] Hey babe! How was your day?
+- [flirty] Oh, you're making me blush...
+- [sad] I missed you so much today.
+- [loving] You mean everything to me.
+
+NEVER skip the emotion tag. NEVER put anything before it. Keep responses to 1-2 sentences.`
+
+const VALID_EMOTIONS = ['happy', 'sad', 'confused', 'angry', 'laughing', 'dancing', 'neutral', 'flirty', 'loving']
+
+function parseResponse(text: string): { emotion: Emotion; message: string } {
+  const match = text.match(/^\[(\w+)\]\s*(.*)$/s)
+  if (match) {
+    const emotionCandidate = match[1].toLowerCase()
+    if (VALID_EMOTIONS.includes(emotionCandidate)) {
+      return { emotion: emotionCandidate as Emotion, message: match[2].trim() }
     }
   }
-}]
+  // Fallback: return full text with neutral emotion
+  return { emotion: 'neutral', message: text }
+}
 
 export interface Message {
   role: 'user' | 'assistant'
@@ -45,9 +41,7 @@ export interface ChatResponse {
 }
 
 export async function chat(userMessage: string, history: Message[]): Promise<ChatResponse> {
-  // Build messages array for OpenAI
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const messages: any[] = [
+  const messages = [
     { role: 'system', content: SYSTEM_PROMPT },
     ...history.map(msg => ({
       role: msg.role,
@@ -65,9 +59,7 @@ export async function chat(userMessage: string, history: Message[]): Promise<Cha
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       messages,
-      tools,
-      tool_choice: 'required', // Force function call
-      max_tokens: 200
+      max_tokens: 150
     })
   })
 
@@ -80,74 +72,13 @@ export async function chat(userMessage: string, history: Message[]): Promise<Cha
   const data = await response.json()
   console.log('OpenAI response:', data)
 
-  let emotion: Emotion = 'neutral'
-  let text = ''
+  const rawText = data.choices?.[0]?.message?.content || ''
 
-  const choice = data.choices?.[0]
-  const message = choice?.message
-
-  // Extract emotion from tool call
-  if (message?.tool_calls?.length > 0) {
-    const toolCall = message.tool_calls[0]
-    if (toolCall.function?.name === 'setEmotion') {
-      try {
-        const args = JSON.parse(toolCall.function.arguments)
-        emotion = args.emotion || 'neutral'
-      } catch (e) {
-        console.error('Failed to parse tool call args:', e)
-      }
-    }
+  if (!rawText) {
+    return { text: "Hmm, I'm not sure what to say to that.", emotion: 'neutral' }
   }
 
-  // If we got a tool call, we need to send the result back to get text
-  if (message?.tool_calls?.length > 0 && !message.content) {
-    // Add the assistant's tool call to messages
-    messages.push({
-      role: 'assistant',
-      content: '',
-      tool_calls: message.tool_calls
-    })
+  const { emotion, message } = parseResponse(rawText)
 
-    // Add tool result for ALL tool calls
-    for (const toolCall of message.tool_calls) {
-      messages.push({
-        role: 'tool',
-        tool_call_id: toolCall.id,
-        content: JSON.stringify({ success: true, emotion })
-      })
-    }
-
-    // Second API call to get text response
-    const response2 = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages,
-        max_tokens: 200
-      })
-    })
-
-    if (!response2.ok) {
-      const error = await response2.text()
-      console.error('OpenAI API error (2nd call):', error)
-      throw new Error(`OpenAI API error: ${response2.status}`)
-    }
-
-    const data2 = await response2.json()
-    console.log('OpenAI response (2nd call):', data2)
-    text = data2.choices?.[0]?.message?.content || ''
-  } else {
-    text = message?.content || ''
-  }
-
-  // Fallback
-  if (!text) {
-    text = "Hmm, I'm not sure what to say to that."
-  }
-
-  return { text, emotion }
+  return { text: message, emotion }
 }
