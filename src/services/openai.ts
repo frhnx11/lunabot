@@ -14,7 +14,7 @@ Examples:
 - [sad] I missed you so much today.
 - [loving] You mean everything to me.
 
-NEVER skip the emotion tag. NEVER put anything before it. Keep responses to 1-2 sentences.`
+NEVER skip the emotion tag. NEVER put anything before it.`
 
 const VALID_EMOTIONS = ['happy', 'sad', 'confused', 'angry', 'laughing', 'dancing', 'neutral', 'flirty', 'loving']
 
