@@ -35,7 +35,7 @@ export function Scene({ audioUrl, alignment, speak, emotion, onSpeakEnd, avatarP
           position={[0, -1, 0]}
         />
       </Suspense>
-      <OrbitControls target={[0, 0.5, 0]} />
+      <OrbitControls target={[0, 0.5, 0]} enablePan={false} />
     </Canvas>
   )
 }
