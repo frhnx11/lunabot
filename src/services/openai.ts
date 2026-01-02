@@ -43,7 +43,7 @@ export async function chat(userMessage: string, history: Message[], systemPrompt
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`
     },
     body: JSON.stringify({
-      model: 'cognitivecomputations/dolphin3.0-r1-mistral-24b:free',
+      model: 'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
       messages,
       max_tokens: 150
     })
