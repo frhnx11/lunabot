@@ -44,7 +44,7 @@ declare global {
   }
 }
 
-type Page = 'home' | 'characters'
+type Page = 'home' | 'characters' | 'about'
 
 function App() {
   const [speak, setSpeak] = useState(false)
@@ -54,7 +54,7 @@ function App() {
   const [alignment, setAlignment] = useState<AlignmentChar[]>([])
   const [emotion, setEmotion] = useState<Emotion>('neutral')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [currentPage, setCurrentPage] = useState<Page>('home')
+  const [currentPage, setCurrentPage] = useState<Page>('about')
   const [selectedCharacter, setSelectedCharacter] = useState<Character>(
     CHARACTERS.find(c => c.id === DEFAULT_CHARACTER_ID) || CHARACTERS[0]
   )
