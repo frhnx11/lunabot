@@ -11,22 +11,27 @@ interface SceneProps {
   speak: boolean
   emotion: Emotion
   onSpeakEnd: () => void
-  showClothing: boolean
+  avatarPath: string
 }
 
-export function Scene({ audioUrl, alignment, speak, emotion, onSpeakEnd, showClothing }: SceneProps) {
+export function Scene({ audioUrl, alignment, speak, emotion, onSpeakEnd, avatarPath }: SceneProps) {
   return (
-    <Canvas camera={{ position: [0, 1, 3], fov: 50 }}>
+    <Canvas
+      camera={{ position: [0, 1, 3], fov: 50 }}
+      gl={{ alpha: true }}
+      style={{ background: 'transparent' }}
+    >
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 5, 5]} intensity={1} />
       <Suspense fallback={null}>
         <Avatar
+          key={avatarPath}
           audioUrl={audioUrl}
           alignment={alignment}
           speak={speak}
           emotion={emotion}
           onSpeakEnd={onSpeakEnd}
-          showClothing={showClothing}
+          avatarPath={avatarPath}
           position={[0, -1, 0]}
         />
       </Suspense>

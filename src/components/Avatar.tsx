@@ -25,25 +25,14 @@ interface AvatarProps {
   speak: boolean
   emotion: Emotion
   onSpeakEnd: () => void
-  showClothing: boolean
+  avatarPath: string
   position?: [number, number, number]
 }
 
-export function Avatar({ audioUrl, alignment, speak, emotion, onSpeakEnd, showClothing, ...props }: AvatarProps) {
-  const { scene } = useGLTF('/avatar.glb')
+export function Avatar({ audioUrl, alignment, speak, emotion, onSpeakEnd, avatarPath, ...props }: AvatarProps) {
+  const { scene } = useGLTF(avatarPath)
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene])
   const { nodes } = useGraph(clone)
-
-  // Toggle clothing visibility
-  useEffect(() => {
-    const clothingMeshes = ['Wolf3D_Outfit_Top', 'Wolf3D_Outfit_Bottom', 'Wolf3D_Outfit_Footwear']
-    clothingMeshes.forEach(meshName => {
-      const mesh = nodes[meshName] as THREE.Mesh
-      if (mesh) {
-        mesh.visible = showClothing
-      }
-    })
-  }, [nodes, showClothing])
 
   // Load idle animation
   const { animations: idleAnim } = useGLTF(IDLE_ANIMATION)

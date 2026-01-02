@@ -2,9 +2,6 @@ import type { Emotion } from '../constants'
 
 const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY
 
-// Custom voice ID
-const DEFAULT_VOICE_ID = 'HECTtlQhQlGs92mhlNnU'
-
 // Emotion-based voice settings (stability: lower = more expressive)
 const EMOTION_VOICE_SETTINGS: Record<Emotion, { stability: number; similarity_boost: number }> = {
   happy: { stability: 0.35, similarity_boost: 0.75 },
@@ -29,11 +26,11 @@ export interface ElevenLabsResponse {
   alignment: AlignmentChar[]
 }
 
-export async function textToSpeechWithTimestamps(text: string, emotion: Emotion = 'neutral'): Promise<ElevenLabsResponse> {
+export async function textToSpeechWithTimestamps(text: string, emotion: Emotion = 'neutral', voiceId: string): Promise<ElevenLabsResponse> {
   const voiceSettings = EMOTION_VOICE_SETTINGS[emotion] || EMOTION_VOICE_SETTINGS.neutral
 
   const response = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${DEFAULT_VOICE_ID}/with-timestamps`,
+    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps`,
     {
       method: 'POST',
       headers: {

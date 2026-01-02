@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef } from 'react'
 import './App.css'
 import { Scene } from './components/Scene'
+import { Sidebar } from './components/Sidebar'
 import { textToSpeechWithTimestamps, type AlignmentChar } from './services/elevenLabs'
 import { chat, type Message } from './services/openai'
-import type { Emotion } from './constants'
+import { CHARACTERS, DEFAULT_CHARACTER_ID, type Emotion, type Character } from './constants'
 
 // Web Speech API types
 interface SpeechRecognitionEvent extends Event {
@@ -50,11 +51,18 @@ function App() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [alignment, setAlignment] = useState<AlignmentChar[]>([])
   const [emotion, setEmotion] = useState<Emotion>('neutral')
-  const [showClothing, setShowClothing] = useState(true)
-
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [selectedCharacter, setSelectedCharacter] = useState<Character>(
+    CHARACTERS.find(c => c.id === DEFAULT_CHARACTER_ID) || CHARACTERS[0]
+  )
   const conversationHistory = useRef<Message[]>([])
   const emotionTimeoutRef = useRef<number | null>(null)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
+
+  const handleSelectCharacter = (character: Character) => {
+    setSelectedCharacter(character)
+    setSidebarOpen(false)
+  }
 
   const handleSend = async (userMessage: string) => {
     if (!userMessage.trim() || loading || speak) return
@@ -67,7 +75,7 @@ function App() {
     }
 
     try {
-      const response = await chat(userMessage, conversationHistory.current)
+      const response = await chat(userMessage, conversationHistory.current, selectedCharacter.systemPrompt)
       console.log('Emotion:', response.emotion, 'Text:', response.text)
 
       setEmotion(response.emotion)
@@ -77,7 +85,7 @@ function App() {
         { role: 'assistant', content: response.text }
       )
 
-      const ttsResponse = await textToSpeechWithTimestamps(response.text, response.emotion)
+      const ttsResponse = await textToSpeechWithTimestamps(response.text, response.emotion, selectedCharacter.voiceId)
       setAudioUrl(ttsResponse.audioUrl)
       setAlignment(ttsResponse.alignment)
       setSpeak(true)
@@ -154,14 +162,23 @@ function App() {
 
   return (
     <div className="app">
-      <div className="canvas-container">
+      <Sidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        selectedCharacterId={selectedCharacter.id}
+        onSelectCharacter={handleSelectCharacter}
+      />
+      <div
+        className="canvas-container"
+        style={{ backgroundImage: `url(${selectedCharacter.backgroundImage})` }}
+      >
         <Scene
           audioUrl={audioUrl}
           alignment={alignment}
           speak={speak}
           emotion={emotion}
           onSpeakEnd={handleSpeakEnd}
-          showClothing={showClothing}
+          avatarPath={selectedCharacter.avatarPath}
         />
       </div>
       <button
@@ -179,12 +196,6 @@ function App() {
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
           </svg>
         )}
-      </button>
-      <button
-        className="clothing-toggle"
-        onClick={() => setShowClothing(!showClothing)}
-      >
-        {showClothing ? 'Remove Clothing' : 'Add Clothing'}
       </button>
     </div>
   )
