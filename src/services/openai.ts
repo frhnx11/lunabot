@@ -1,6 +1,6 @@
 import type { Emotion } from '../constants'
 
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY
 
 const VALID_EMOTIONS = ['happy', 'sad', 'confused', 'angry', 'laughing', 'dancing', 'neutral', 'flirty', 'loving']
 
@@ -36,14 +36,14 @@ export async function chat(userMessage: string, history: Message[], systemPrompt
     { role: 'user', content: userMessage }
   ]
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'cognitivecomputations/dolphin3.0-r1-mistral-24b:free',
       messages,
       max_tokens: 150
     })
@@ -51,12 +51,12 @@ export async function chat(userMessage: string, history: Message[], systemPrompt
 
   if (!response.ok) {
     const error = await response.text()
-    console.error('OpenAI API error:', error)
-    throw new Error(`OpenAI API error: ${response.status}`)
+    console.error('OpenRouter API error:', error)
+    throw new Error(`OpenRouter API error: ${response.status}`)
   }
 
   const data = await response.json()
-  console.log('OpenAI response:', data)
+  console.log('OpenRouter response:', data)
 
   const rawText = data.choices?.[0]?.message?.content || ''
 

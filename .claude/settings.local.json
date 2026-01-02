@@ -3,7 +3,8 @@
     "allow": [
       "WebFetch(domain:github.com)",
       "Bash(curl:*)",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
