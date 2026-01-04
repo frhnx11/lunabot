@@ -1,6 +1,6 @@
 import type { Emotion } from '../constants'
 
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY
+const DEEPINFRA_API_KEY = import.meta.env.VITE_DEEPINFRA_API_KEY
 
 const VALID_EMOTIONS = ['happy', 'sad', 'confused', 'angry', 'laughing', 'dancing', 'neutral', 'flirty', 'loving']
 
@@ -36,14 +36,14 @@ export async function chat(userMessage: string, history: Message[], systemPrompt
     { role: 'user', content: userMessage }
   ]
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetch('https://api.deepinfra.com/v1/openai/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`
+      'Authorization': `Bearer ${DEEPINFRA_API_KEY}`
     },
     body: JSON.stringify({
-      model: 'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
+      model: 'cognitivecomputations/dolphin-2.6-mixtral-8x7b',
       messages,
       max_tokens: 150
     })
@@ -51,12 +51,12 @@ export async function chat(userMessage: string, history: Message[], systemPrompt
 
   if (!response.ok) {
     const error = await response.text()
-    console.error('OpenRouter API error:', error)
-    throw new Error(`OpenRouter API error: ${response.status}`)
+    console.error('DeepInfra API error:', error)
+    throw new Error(`DeepInfra API error: ${response.status}`)
   }
 
   const data = await response.json()
-  console.log('OpenRouter response:', data)
+  console.log('DeepInfra response:', data)
 
   const rawText = data.choices?.[0]?.message?.content || ''
 

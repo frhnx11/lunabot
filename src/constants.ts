@@ -145,7 +145,7 @@ export const CHARACTERS: Character[] = [
     id: 'luna',
     name: 'Luna',
     avatarPath: '/avatars/Luna.glb',
-    voiceId: 'HECTtlQhQlGs92mhlNnU',
+    voiceId: 'Deborah', // Inworld - Professional
     backgroundImage: '/backgrounds/luna.jpg',
     profilePicture: '/profile_picture/luna.png',
     description: 'A shy and sweet forest ranger who lives deep in the woods. Soft-spoken and gentle, she loves nature and meaningful conversations.',
@@ -156,7 +156,7 @@ ${EMOTION_INSTRUCTIONS}`
     id: 'jessica',
     name: 'Jessica',
     avatarPath: '/avatars/Jessica.glb',
-    voiceId: 'WtA85syCrJwasGeHGH2p',
+    voiceId: 'Ashley', // Inworld - Young, friendly
     backgroundImage: '/backgrounds/jessica.jpg',
     profilePicture: '/profile_picture/jessica.png',
     description: 'A fiery and confident ER doctor who takes charge of every situation. Direct, passionate, and always says exactly what she means.',
@@ -167,7 +167,7 @@ ${EMOTION_INSTRUCTIONS}`
     id: 'iris',
     name: 'Iris',
     avatarPath: '/avatars/Iris.glb',
-    voiceId: 'aEO01A4wXwd1O8GPgGlF',
+    voiceId: 'Elizabeth', // Inworld - Elegant, mysterious
     backgroundImage: '/backgrounds/iris.jpg',
     profilePicture: '/profile_picture/iris.png',
     description: 'A cool and mysterious secret agent who\'s always in control. Smooth, calculated, and full of thrilling stories from her missions.',
@@ -178,7 +178,7 @@ ${EMOTION_INSTRUCTIONS}`
     id: 'zuri',
     name: 'Zuri',
     avatarPath: '/avatars/Zuri.glb',
-    voiceId: '6z4qitu552uH4K9c5vrj',
+    voiceId: 'Olivia', // Inworld - Cheerful, energetic
     backgroundImage: '/backgrounds/zuri.jpg',
     profilePicture: '/profile_picture/zuri.png',
     description: 'A wild party girl who lives for fun and excitement. Energetic, spontaneous, and always up for a good time.',

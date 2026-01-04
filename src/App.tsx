@@ -2,7 +2,10 @@ import { useState, useCallback, useRef } from 'react'
 import './App.css'
 import { Scene } from './components/Scene'
 import { Sidebar } from './components/Sidebar'
-import { textToSpeechWithTimestamps, type AlignmentChar } from './services/elevenLabs'
+import { AuthPage } from './components/AuthPage'
+import { NamePrompt } from './components/NamePrompt'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import { textToSpeechWithTimestamps, type AlignmentChar } from './services/inworld'
 import { chat, type Message } from './services/openai'
 import { CHARACTERS, DEFAULT_CHARACTER_ID, type Emotion, type Character } from './constants'
 
@@ -44,9 +47,32 @@ declare global {
   }
 }
 
-type Page = 'home' | 'characters' | 'about'
+type Page = 'home' | 'characters' | 'about' | 'settings'
 
-function App() {
+function AppContent() {
+  const { user, loading: authLoading, isNewUser } = useAuth()
+
+  if (authLoading) {
+    return (
+      <div className="app loading-screen">
+        <div className="loading-spinner"></div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthPage />
+  }
+
+  if (isNewUser) {
+    return <NamePrompt />
+  }
+
+  return <MainApp />
+}
+
+function MainApp() {
+  const { userData, deductCredit } = useAuth()
   const [speak, setSpeak] = useState(false)
   const [loading, setLoading] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
@@ -71,6 +97,12 @@ function App() {
   const handleSend = async (userMessage: string) => {
     if (!userMessage.trim() || loading || speak) return
 
+    // Check if user has credits
+    if (!userData || userData.credits <= 0) {
+      alert('You have no credits left. Please purchase more credits to continue chatting.')
+      return
+    }
+
     setLoading(true)
 
     // Clear any pending emotion reset
@@ -89,10 +121,13 @@ function App() {
         { role: 'assistant', content: response.text }
       )
 
-      const ttsResponse = await textToSpeechWithTimestamps(response.text, response.emotion, selectedCharacter.voiceId)
+      const ttsResponse = await textToSpeechWithTimestamps(response.text, selectedCharacter.voiceId)
       setAudioUrl(ttsResponse.audioUrl)
       setAlignment(ttsResponse.alignment)
       setSpeak(true)
+
+      // Deduct 1 credit after successful response
+      await deductCredit()
     } catch (error) {
       console.error('Error:', error)
     } finally {
@@ -162,7 +197,8 @@ function App() {
     }
   }
 
-  const isDisabled = loading || speak
+  const hasNoCredits = !userData || userData.credits <= 0
+  const isDisabled = loading || speak || hasNoCredits
 
   return (
     <div className="app">
@@ -209,6 +245,14 @@ function App() {
         </>
       )}
     </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 

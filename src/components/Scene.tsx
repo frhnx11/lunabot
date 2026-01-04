@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { Suspense } from 'react'
 import { Avatar } from './Avatar'
-import type { AlignmentChar } from '../services/elevenLabs'
+import type { AlignmentChar } from '../services/inworld'
 import type { Emotion } from '../constants'
 
 interface SceneProps {

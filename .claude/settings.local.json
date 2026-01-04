@@ -4,7 +4,10 @@
       "WebFetch(domain:github.com)",
       "Bash(curl:*)",
       "Bash(move:*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:openrouter.ai)",
+      "WebFetch(domain:elevenlabs.io)",
+      "WebFetch(domain:help.elevenlabs.io)"
     ],
     "deny": [],
     "ask": []

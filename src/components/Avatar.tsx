@@ -4,7 +4,7 @@ import { useFrame, useGraph } from '@react-three/fiber'
 import { SkeletonUtils } from 'three-stdlib'
 import * as THREE from 'three'
 import { CORRESPONDING_VISEME, VISEME_INTENSITY, EMOTION_FACE_MORPHS } from '../constants'
-import type { AlignmentChar } from '../services/elevenLabs'
+import type { AlignmentChar } from '../services/inworld'
 import type { Emotion } from '../constants'
 
 // Animation file paths
@@ -160,7 +160,7 @@ export function Avatar({ audioUrl, alignment, speak, emotion, onSpeakEnd, avatar
     }
   }, [speak, emotion, actions])
 
-  // Handle Eleven Labs audio playback with lip sync
+  // Handle audio playback with lip sync
   useEffect(() => {
     if (!speak || !audioUrl) return
 

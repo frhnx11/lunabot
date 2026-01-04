@@ -1,6 +1,10 @@
+import { useState } from 'react'
 import { CHARACTERS, type Character } from '../constants'
+import { useAuth } from '../context/AuthContext'
+import { CREDIT_PACKAGES, createOrder, verifyPayment, openRazorpayCheckout, type CreditPackage } from '../services/payment'
 
-type Page = 'home' | 'characters' | 'about'
+type Page = 'home' | 'characters' | 'about' | 'settings'
+type SettingsTab = 'profile' | 'credits'
 
 interface SidebarProps {
   isOpen: boolean
@@ -19,6 +23,49 @@ export function Sidebar({
   selectedCharacter,
   onSelectCharacter
 }: SidebarProps) {
+  const { user, userData, logout, refreshCredits } = useAuth()
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('profile')
+  const [purchaseLoading, setPurchaseLoading] = useState<string | null>(null)
+
+  const handlePurchase = async (pkg: CreditPackage) => {
+    if (!user || !userData) return
+
+    setPurchaseLoading(pkg.id)
+
+    try {
+      // Create order on backend
+      const order = await createOrder(pkg.id, user.uid)
+
+      // Open Razorpay checkout
+      openRazorpayCheckout(
+        order.orderId,
+        order.amount,
+        pkg,
+        userData.name,
+        userData.email,
+        async (response) => {
+          // Verify payment on backend
+          try {
+            await verifyPayment(response, user.uid, pkg.id)
+            await refreshCredits()
+            alert(`Successfully purchased ${pkg.credits} credits!`)
+          } catch (error) {
+            console.error('Payment verification failed:', error)
+            alert('Payment verification failed. Please contact support.')
+          }
+          setPurchaseLoading(null)
+        },
+        (error) => {
+          console.error('Razorpay error:', error)
+          setPurchaseLoading(null)
+        }
+      )
+    } catch (error) {
+      console.error('Error creating order:', error)
+      alert('Failed to create order. Please try again.')
+      setPurchaseLoading(null)
+    }
+  }
 
   const handleCharacterSelect = (character: Character) => {
     onSelectCharacter(character)
@@ -67,6 +114,16 @@ export function Sidebar({
               <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
             </svg>
             <span>Characters</span>
+          </button>
+
+          <button
+            className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`}
+            onClick={() => { onNavigate('settings'); onToggle(); }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            <span>Settings</span>
           </button>
         </div>
 
@@ -181,6 +238,108 @@ export function Sidebar({
                 )}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Settings Page */}
+      {currentPage === 'settings' && (
+        <div className="settings-page">
+          <div className="settings-inner-sidebar">
+            <h2>Settings</h2>
+            <div className="settings-nav">
+              <button
+                className={`settings-nav-item ${settingsTab === 'profile' ? 'active' : ''}`}
+                onClick={() => setSettingsTab('profile')}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                <span>Profile</span>
+              </button>
+              <button
+                className={`settings-nav-item ${settingsTab === 'credits' ? 'active' : ''}`}
+                onClick={() => setSettingsTab('credits')}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/>
+                </svg>
+                <span>Credits</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="settings-content">
+            {settingsTab === 'profile' && (
+              <div className="profile-section">
+                <h3>Profile</h3>
+
+                <div className="profile-info">
+                  <div className="profile-avatar">
+                    {userData?.name?.charAt(0).toUpperCase() || '?'}
+                  </div>
+
+                  <div className="profile-details">
+                    <div className="profile-field">
+                      <label>Name</label>
+                      <p>{userData?.name || 'Not set'}</p>
+                    </div>
+
+                    <div className="profile-field">
+                      <label>Email</label>
+                      <p>{userData?.email || 'Not set'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button className="logout-btn" onClick={logout}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
+            )}
+
+            {settingsTab === 'credits' && (
+              <div className="credits-section">
+                <h3>Credits</h3>
+
+                <div className="credits-balance">
+                  <div className="balance-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/>
+                    </svg>
+                  </div>
+                  <div className="balance-info">
+                    <span className="balance-label">Your Balance</span>
+                    <span className="balance-amount">{userData?.credits ?? 0} Credits</span>
+                  </div>
+                </div>
+
+                <p className="credits-info">1 credit = 1 voice response from your AI companion</p>
+
+                <div className="credits-packages">
+                  {CREDIT_PACKAGES.map((pkg) => (
+                    <button
+                      key={pkg.id}
+                      className={`package-card ${pkg.theme || ''}`}
+                      onClick={() => handlePurchase(pkg)}
+                      disabled={purchaseLoading !== null}
+                    >
+                      {pkg.badge && <div className="package-badge">{pkg.badge}</div>}
+                      <div className="package-name">{pkg.name}</div>
+                      <div className="package-credits">{pkg.credits} Credits</div>
+                      <div className="package-price">{pkg.priceDisplay}</div>
+                      <div className="package-per-credit">{pkg.perCredit}</div>
+                      {purchaseLoading === pkg.id && (
+                        <div className="package-loading">Processing...</div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
