@@ -17,7 +17,7 @@ interface SceneProps {
 export function Scene({ audioUrl, alignment, speak, emotion, onSpeakEnd, avatarPath }: SceneProps) {
   return (
     <Canvas
-      camera={{ position: [0, 1, 3], fov: 50 }}
+      camera={{ position: [0, 0.8, 1.5], fov: 50 }}
       gl={{ alpha: true }}
       style={{ background: 'transparent' }}
     >
