@@ -7,7 +7,7 @@ import { NamePrompt } from './components/NamePrompt'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { textToSpeechWithTimestamps, type AlignmentChar } from './services/inworld'
 import { chat, type Message } from './services/openai'
-import { CHARACTERS, DEFAULT_CHARACTER_ID, type Emotion, type Character } from './constants'
+import { CHARACTERS, DEFAULT_CHARACTER_ID, type Character } from './constants'
 
 // Web Speech API types
 interface SpeechRecognitionEvent extends Event {
@@ -78,14 +78,12 @@ function MainApp() {
   const [isRecording, setIsRecording] = useState(false)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [alignment, setAlignment] = useState<AlignmentChar[]>([])
-  const [emotion, setEmotion] = useState<Emotion>('neutral')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState<Page>('about')
   const [selectedCharacter, setSelectedCharacter] = useState<Character>(
     CHARACTERS.find(c => c.id === DEFAULT_CHARACTER_ID) || CHARACTERS[0]
   )
   const conversationHistory = useRef<Message[]>([])
-  const emotionTimeoutRef = useRef<number | null>(null)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
 
   const handleSelectCharacter = (character: Character) => {
@@ -105,16 +103,9 @@ function MainApp() {
 
     setLoading(true)
 
-    // Clear any pending emotion reset
-    if (emotionTimeoutRef.current) {
-      clearTimeout(emotionTimeoutRef.current)
-    }
-
     try {
       const response = await chat(userMessage, conversationHistory.current, selectedCharacter.systemPrompt)
-      console.log('Emotion:', response.emotion, 'Text:', response.text)
-
-      setEmotion(response.emotion)
+      console.log('Response:', response.text)
 
       conversationHistory.current.push(
         { role: 'user', content: userMessage },
@@ -142,10 +133,6 @@ function MainApp() {
       setAudioUrl(null)
     }
     setAlignment([])
-
-    emotionTimeoutRef.current = window.setTimeout(() => {
-      setEmotion('neutral')
-    }, 5000)
   }, [audioUrl])
 
   const startListening = () => {
@@ -221,7 +208,6 @@ function MainApp() {
               audioUrl={audioUrl}
               alignment={alignment}
               speak={speak}
-              emotion={emotion}
               onSpeakEnd={handleSpeakEnd}
               avatarPath={selectedCharacter.avatarPath}
             />

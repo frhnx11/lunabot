@@ -3,18 +3,16 @@ import { OrbitControls } from '@react-three/drei'
 import { Suspense } from 'react'
 import { Avatar } from './Avatar'
 import type { AlignmentChar } from '../services/inworld'
-import type { Emotion } from '../constants'
 
 interface SceneProps {
   audioUrl: string | null
   alignment: AlignmentChar[]
   speak: boolean
-  emotion: Emotion
   onSpeakEnd: () => void
   avatarPath: string
 }
 
-export function Scene({ audioUrl, alignment, speak, emotion, onSpeakEnd, avatarPath }: SceneProps) {
+export function Scene({ audioUrl, alignment, speak, onSpeakEnd, avatarPath }: SceneProps) {
   return (
     <Canvas
       camera={{ position: [0, 0.8, 1.5], fov: 50 }}
@@ -29,7 +27,6 @@ export function Scene({ audioUrl, alignment, speak, emotion, onSpeakEnd, avatarP
           audioUrl={audioUrl}
           alignment={alignment}
           speak={speak}
-          emotion={emotion}
           onSpeakEnd={onSpeakEnd}
           avatarPath={avatarPath}
           position={[0, -1, 0]}

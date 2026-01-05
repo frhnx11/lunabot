@@ -1,20 +1,4 @@
-import type { Emotion } from '../constants'
-
 const DEEPINFRA_API_KEY = import.meta.env.VITE_DEEPINFRA_API_KEY
-
-const VALID_EMOTIONS = ['happy', 'sad', 'confused', 'angry', 'laughing', 'dancing', 'neutral', 'flirty', 'loving']
-
-function parseResponse(text: string): { emotion: Emotion; message: string } {
-  const match = text.match(/^\[(\w+)\]\s*(.*)$/s)
-  if (match) {
-    const emotionCandidate = match[1].toLowerCase()
-    if (VALID_EMOTIONS.includes(emotionCandidate)) {
-      return { emotion: emotionCandidate as Emotion, message: match[2].trim() }
-    }
-  }
-  // Fallback: return full text with neutral emotion
-  return { emotion: 'neutral', message: text }
-}
 
 export interface Message {
   role: 'user' | 'assistant'
@@ -23,7 +7,6 @@ export interface Message {
 
 export interface ChatResponse {
   text: string
-  emotion: Emotion
 }
 
 export async function chat(userMessage: string, history: Message[], systemPrompt: string): Promise<ChatResponse> {
@@ -58,13 +41,11 @@ export async function chat(userMessage: string, history: Message[], systemPrompt
   const data = await response.json()
   console.log('DeepInfra response:', data)
 
-  const rawText = data.choices?.[0]?.message?.content || ''
+  const text = data.choices?.[0]?.message?.content || ''
 
-  if (!rawText) {
-    return { text: "Hmm, I'm not sure what to say to that.", emotion: 'neutral' }
+  if (!text) {
+    return { text: "Hmm, I'm not sure what to say to that." }
   }
 
-  const { emotion, message } = parseResponse(rawText)
-
-  return { text: message, emotion }
+  return { text }
 }
