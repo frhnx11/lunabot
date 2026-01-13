@@ -1,4 +1,6 @@
-const INWORLD_API_KEY = import.meta.env.VITE_INWORLD_API_KEY
+import { auth } from '../firebase'
+
+const FUNCTIONS_BASE_URL = 'https://us-central1-casanaai.cloudfunctions.net'
 
 export interface AlignmentChar {
   character: string
@@ -15,32 +17,27 @@ export async function textToSpeechWithTimestamps(
   text: string,
   voiceId: string = 'Ashley'
 ): Promise<InworldResponse> {
-  const response = await fetch('https://api.inworld.ai/tts/v1/voice', {
+  const user = auth.currentUser
+  if (!user) {
+    throw new Error('User not authenticated')
+  }
+
+  const token = await user.getIdToken()
+
+  const response = await fetch(`${FUNCTIONS_BASE_URL}/tts`, {
     method: 'POST',
     headers: {
-      'Authorization': `Basic ${INWORLD_API_KEY}`,
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({
-      text,
-      voiceId,
-      modelId: 'inworld-tts-1',
-      timestampType: 'CHARACTER',
-      outputFormat: 'mp3',
-      audioConfig: {
-        speakingRate: 0.9, // Slower speech (0.5 to 1.5, default 1.0)
-        temperature: 1.1 // More expressive speech (0.6 to 1.2)
-      }
-    })
+    body: JSON.stringify({ text, voiceId })
   })
 
   if (!response.ok) {
-    throw new Error(`Inworld API error: ${response.status}`)
+    throw new Error(`TTS API error: ${response.status}`)
   }
 
   const data = await response.json()
-
-  console.log('Inworld response:', data)
 
   // Convert base64 audio to blob URL
   const audioBlob = base64ToBlob(data.audioContent, 'audio/mpeg')
@@ -56,8 +53,6 @@ export async function textToSpeechWithTimestamps(
     start_time_ms: (startTimes[i] || 0) * 1000,
     end_time_ms: (endTimes[i] || (startTimes[i] || 0) + 0.05) * 1000
   }))
-
-  console.log('Parsed alignment:', alignment)
 
   return { audioUrl, alignment }
 }
