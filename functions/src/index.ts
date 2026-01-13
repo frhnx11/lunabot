@@ -2,6 +2,7 @@ import {onRequest} from "firebase-functions/https";
 import {defineSecret} from "firebase-functions/params";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import {getAuth} from "firebase-admin/auth";
 import Razorpay from "razorpay";
 import * as crypto from "crypto";
 import cors from "cors";
@@ -13,6 +14,18 @@ const corsHandler = cors({origin: true});
 // Define secrets
 const razorpayKeyId = defineSecret("RAZORPAY_KEY_ID");
 const razorpayKeySecret = defineSecret("RAZORPAY_KEY_SECRET");
+const deepinfraApiKey = defineSecret("DEEPINFRA_API_KEY");
+const inworldApiKey = defineSecret("INWORLD_API_KEY");
+
+// Helper to verify Firebase auth token
+async function verifyAuthToken(req: {headers: {authorization?: string}}) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    throw new Error("Missing or invalid authorization header");
+  }
+  const token = authHeader.split("Bearer ")[1];
+  return await getAuth().verifyIdToken(token);
+}
 
 // Credit packages configuration
 const CREDIT_PACKAGES: Record<string, {credits: number; amount: number}> = {
@@ -147,3 +160,123 @@ export const verifyPayment = onRequest(
     }
   });
 });
+
+// Chat function - proxies DeepInfra API
+export const chat = onRequest(
+  {secrets: [deepinfraApiKey]},
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      if (req.method !== "POST") {
+        res.status(405).send("Method Not Allowed");
+        return;
+      }
+
+      try {
+        // Verify user is authenticated
+        await verifyAuthToken(req);
+
+        const {message, history, systemPrompt} = req.body;
+
+        if (!message || !systemPrompt) {
+          res.status(400).json({error: "Missing message or systemPrompt"});
+          return;
+        }
+
+        const messages = [
+          {role: "system", content: systemPrompt},
+          ...(history || []).map((msg: {role: string; content: string}) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+          {role: "user", content: message},
+        ];
+
+        const response = await fetch(
+          "https://api.deepinfra.com/v1/openai/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${deepinfraApiKey.value()}`,
+            },
+            body: JSON.stringify({
+              model: "cognitivecomputations/dolphin-2.6-mixtral-8x7b",
+              messages,
+              max_tokens: 150,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`DeepInfra API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || "";
+
+        res.json({text: text || "Hmm, I'm not sure what to say to that."});
+      } catch (error) {
+        console.error("Chat error:", error);
+        res.status(500).json({error: "Failed to get chat response"});
+      }
+    });
+  }
+);
+
+// TTS function - proxies Inworld API
+export const tts = onRequest(
+  {secrets: [inworldApiKey]},
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      if (req.method !== "POST") {
+        res.status(405).send("Method Not Allowed");
+        return;
+      }
+
+      try {
+        // Verify user is authenticated
+        await verifyAuthToken(req);
+
+        const {text, voiceId} = req.body;
+
+        if (!text) {
+          res.status(400).json({error: "Missing text"});
+          return;
+        }
+
+        const response = await fetch("https://api.inworld.ai/tts/v1/voice", {
+          method: "POST",
+          headers: {
+            "Authorization": `Basic ${inworldApiKey.value()}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text,
+            voiceId: voiceId || "Ashley",
+            modelId: "inworld-tts-1",
+            timestampType: "CHARACTER",
+            outputFormat: "mp3",
+            audioConfig: {
+              speakingRate: 0.9,
+              temperature: 1.1,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Inworld API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        res.json({
+          audioContent: data.audioContent,
+          timestampInfo: data.timestampInfo,
+        });
+      } catch (error) {
+        console.error("TTS error:", error);
+        res.status(500).json({error: "Failed to generate speech"});
+      }
+    });
+  }
+);
