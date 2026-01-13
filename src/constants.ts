@@ -92,7 +92,7 @@ export const CHARACTERS: Character[] = [
     id: 'zuri',
     name: 'Zuri',
     avatarPath: '/avatars/Zuri.glb',
-    voiceId: 'Xiaoyin', // Inworld - Cheerful, energetic
+    voiceId: 'Hana', // Inworld - Cheerful, energetic
     backgroundImage: '/backgrounds/zuri.webp',
     profilePicture: '/profile_picture/zuri.png',
     description: 'A wild party girl who lives for fun and excitement. Energetic, spontaneous, and always up for a good time.',
