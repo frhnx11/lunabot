@@ -3,7 +3,7 @@ import './App.css'
 import { Scene } from './components/Scene'
 import { Sidebar } from './components/Sidebar'
 import { AuthPage } from './components/AuthPage'
-import { NamePrompt } from './components/NamePrompt'
+import { Onboarding } from './components/Onboarding'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { textToSpeechWithTimestamps, type AlignmentChar } from './services/inworld'
 import { chat, type Message } from './services/openai'
@@ -50,7 +50,7 @@ declare global {
 type Page = 'home' | 'characters' | 'about' | 'settings'
 
 function AppContent() {
-  const { user, loading: authLoading, isNewUser } = useAuth()
+  const { user, loading: authLoading, needsOnboarding, saveProfile, userData } = useAuth()
 
   if (authLoading) {
     return (
@@ -64,8 +64,13 @@ function AppContent() {
     return <AuthPage />
   }
 
-  if (isNewUser) {
-    return <NamePrompt />
+  if (needsOnboarding) {
+    return (
+      <Onboarding
+        initialName={userData?.name || user.displayName || ''}
+        onComplete={saveProfile}
+      />
+    )
   }
 
   return <MainApp />
@@ -83,6 +88,7 @@ function MainApp() {
   const [selectedCharacter, setSelectedCharacter] = useState<Character>(
     CHARACTERS.find(c => c.id === DEFAULT_CHARACTER_ID) || CHARACTERS[0]
   )
+  const [danceAnimation, setDanceAnimation] = useState<string | null>(null)
   const conversationHistory = useRef<Message[]>([])
   const recognitionRef = useRef<SpeechRecognition | null>(null)
 
@@ -104,7 +110,7 @@ function MainApp() {
     setLoading(true)
 
     try {
-      const response = await chat(userMessage, conversationHistory.current, selectedCharacter.systemPrompt)
+      const response = await chat(userMessage, conversationHistory.current, selectedCharacter.systemPrompt, userData?.profile)
       console.log('Response:', response.text)
 
       conversationHistory.current.push(
@@ -134,6 +140,16 @@ function MainApp() {
     }
     setAlignment([])
   }, [audioUrl])
+
+  const handleDance = (dance: string) => {
+    if (!speak && !loading && !danceAnimation) {
+      setDanceAnimation(dance)
+    }
+  }
+
+  const handleDanceEnd = useCallback(() => {
+    setDanceAnimation(null)
+  }, [])
 
   const startListening = () => {
     if (loading || speak || isRecording) return
@@ -186,6 +202,7 @@ function MainApp() {
 
   const hasNoCredits = !userData || userData.credits <= 0
   const isDisabled = loading || speak || hasNoCredits
+  const isDanceDisabled = loading || speak || !!danceAnimation
 
   return (
     <div className="app">
@@ -210,6 +227,8 @@ function MainApp() {
               speak={speak}
               onSpeakEnd={handleSpeakEnd}
               avatarPath={selectedCharacter.avatarPath}
+              danceAnimation={danceAnimation}
+              onDanceEnd={handleDanceEnd}
             />
           </div>
           <button
@@ -228,6 +247,43 @@ function MainApp() {
               </svg>
             )}
           </button>
+          <div className="dance-buttons">
+            <button
+              className={`dance-button ${danceAnimation === 'dance1' ? 'active' : ''}`}
+              onClick={() => handleDance('dance1')}
+              disabled={isDanceDisabled}
+            >
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+                <path d="M14 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm-1.8 15l1.3-4.7-2.5 1.5V22h-2v-5.6l3.8-2.3-1.2-4.5c-.3-1.1.1-2.3 1-3L16 4l1.3 1.5-3 2.3 1.5 5.2 3.2-2v-4h2v5.5l-5 3.3-.5 1.7H19v2h-6.8z"/>
+              </svg>
+            </button>
+            <button
+              className={`dance-button ${danceAnimation === 'dance2' ? 'active' : ''}`}
+              onClick={() => handleDance('dance2')}
+              disabled={isDanceDisabled}
+            >
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+                <circle cx="12" cy="12" r="9" fill="none" stroke="white" strokeWidth="1.5"/>
+                <circle cx="8" cy="9" r="1.5"/>
+                <circle cx="16" cy="9" r="1.5"/>
+                <circle cx="12" cy="15" r="1.5"/>
+                <circle cx="6" cy="13" r="1"/>
+                <circle cx="18" cy="13" r="1"/>
+                <circle cx="9" cy="17" r="1"/>
+                <circle cx="15" cy="17" r="1"/>
+                <circle cx="12" cy="5" r="1"/>
+              </svg>
+            </button>
+            <button
+              className={`dance-button ${danceAnimation === 'dance3' ? 'active' : ''}`}
+              onClick={() => handleDance('dance3')}
+              disabled={isDanceDisabled}
+            >
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+                <path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7L12 16.4 5.7 21l2.3-7-6-4.6h7.6z"/>
+              </svg>
+            </button>
+          </div>
         </>
       )}
     </div>

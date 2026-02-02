@@ -11,7 +11,22 @@ export interface ChatResponse {
   text: string
 }
 
-export async function chat(userMessage: string, history: Message[], systemPrompt: string): Promise<ChatResponse> {
+export interface UserProfile {
+  name: string
+  occupation: string
+  personality: string
+  interests: string[]
+  lookingFor: string
+  additionalInfo: string
+  completedOnboarding: boolean
+}
+
+export async function chat(
+  userMessage: string,
+  history: Message[],
+  systemPrompt: string,
+  profile?: UserProfile
+): Promise<ChatResponse> {
   const user = auth.currentUser
   if (!user) {
     throw new Error('User not authenticated')
@@ -28,7 +43,8 @@ export async function chat(userMessage: string, history: Message[], systemPrompt
     body: JSON.stringify({
       message: userMessage,
       history,
-      systemPrompt
+      systemPrompt,
+      profile
     })
   })
 

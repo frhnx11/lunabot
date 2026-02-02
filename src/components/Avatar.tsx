@@ -10,6 +10,13 @@ import type { AlignmentChar } from '../services/inworld'
 const IDLE_ANIMATION = '/animations/F_Standing_Idle_001.glb'
 const TALKING_ANIMATION = '/animations/F_Talking_Variations_002.glb'
 
+// Dance animation file paths
+const DANCE_ANIMATIONS: Record<string, string> = {
+  dance1: '/animations/F_Dances_005.glb',
+  dance2: '/animations/F_Dances_006.glb',
+  dance3: '/animations/F_Dances_007.glb',
+}
+
 // Gentle smile morph values (applied when speaking)
 const GENTLE_SMILE = {
   mouthSmileLeft: 0.2,
@@ -23,9 +30,11 @@ interface AvatarProps {
   onSpeakEnd: () => void
   avatarPath: string
   position?: [number, number, number]
+  danceAnimation: string | null
+  onDanceEnd: () => void
 }
 
-export function Avatar({ audioUrl, alignment, speak, onSpeakEnd, avatarPath, ...props }: AvatarProps) {
+export function Avatar({ audioUrl, alignment, speak, onSpeakEnd, avatarPath, danceAnimation, onDanceEnd, ...props }: AvatarProps) {
   const { scene } = useGLTF(avatarPath)
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene])
   const { nodes } = useGraph(clone)
@@ -33,6 +42,11 @@ export function Avatar({ audioUrl, alignment, speak, onSpeakEnd, avatarPath, ...
   // Load animations
   const { animations: idleAnim } = useGLTF(IDLE_ANIMATION)
   const { animations: talkingAnim } = useGLTF(TALKING_ANIMATION)
+
+  // Load dance animations
+  const { animations: dance1Anim } = useGLTF(DANCE_ANIMATIONS.dance1)
+  const { animations: dance2Anim } = useGLTF(DANCE_ANIMATIONS.dance2)
+  const { animations: dance3Anim } = useGLTF(DANCE_ANIMATIONS.dance3)
 
   // Combine and name animations
   const allAnimations = useMemo(() => {
@@ -50,8 +64,27 @@ export function Avatar({ audioUrl, alignment, speak, onSpeakEnd, avatarPath, ...
       animations.push(clip)
     }
 
+    // Add dance animations
+    if (dance1Anim[0]) {
+      const clip = dance1Anim[0].clone()
+      clip.name = 'dance1'
+      animations.push(clip)
+    }
+
+    if (dance2Anim[0]) {
+      const clip = dance2Anim[0].clone()
+      clip.name = 'dance2'
+      animations.push(clip)
+    }
+
+    if (dance3Anim[0]) {
+      const clip = dance3Anim[0].clone()
+      clip.name = 'dance3'
+      animations.push(clip)
+    }
+
     return animations
-  }, [idleAnim, talkingAnim])
+  }, [idleAnim, talkingAnim, dance1Anim, dance2Anim, dance3Anim])
 
   const group = useRef<THREE.Group>(null)
   const currentViseme = useRef<string | null>(null)
@@ -70,6 +103,9 @@ export function Avatar({ audioUrl, alignment, speak, onSpeakEnd, avatarPath, ...
 
   // Switch between idle and talking animations
   useEffect(() => {
+    // Don't switch to talking if a dance is playing
+    if (danceAnimation) return
+
     const idleAction = actions['idle']
     const talkingAction = actions['talking']
 
@@ -89,7 +125,43 @@ export function Avatar({ audioUrl, alignment, speak, onSpeakEnd, avatarPath, ...
         idleAction.reset().fadeIn(0.3).play()
       }
     }
-  }, [speak, actions])
+  }, [speak, actions, danceAnimation])
+
+  // Handle dance animation playback (one-shot)
+  useEffect(() => {
+    if (!danceAnimation || !actions[danceAnimation]) return
+
+    const idleAction = actions['idle']
+    const talkingAction = actions['talking']
+    const danceAction = actions[danceAnimation]
+
+    // Fade out current animations
+    if (idleAction) idleAction.fadeOut(0.3)
+    if (talkingAction) talkingAction.fadeOut(0.3)
+
+    // Configure dance to play once
+    danceAction.setLoop(THREE.LoopOnce, 1)
+    danceAction.clampWhenFinished = true
+    danceAction.reset().fadeIn(0.3).play()
+
+    // Listen for animation finish
+    const mixer = danceAction.getMixer()
+    const onFinished = (e: { action: THREE.AnimationAction }) => {
+      if (e.action === danceAction) {
+        danceAction.fadeOut(0.3)
+        if (idleAction) {
+          idleAction.reset().fadeIn(0.3).play()
+        }
+        onDanceEnd()
+      }
+    }
+
+    mixer.addEventListener('finished', onFinished)
+
+    return () => {
+      mixer.removeEventListener('finished', onFinished)
+    }
+  }, [danceAnimation, actions, onDanceEnd])
 
   // Handle audio playback with lip sync
   useEffect(() => {

@@ -10,11 +10,22 @@ import {
 import { doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore'
 import { auth, db, googleProvider } from '../firebase'
 
+interface UserProfile {
+  name: string
+  occupation: string
+  personality: string
+  interests: string[]
+  lookingFor: string
+  additionalInfo: string
+  completedOnboarding: boolean
+}
+
 interface UserData {
   name: string
   email: string
   credits: number
   createdAt: unknown
+  profile?: UserProfile
 }
 
 interface AuthContextType {
@@ -22,11 +33,13 @@ interface AuthContextType {
   userData: UserData | null
   loading: boolean
   isNewUser: boolean
+  needsOnboarding: boolean
   signInWithGoogle: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<void>
   signUpWithEmail: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   saveUserName: (name: string) => Promise<void>
+  saveProfile: (profile: UserProfile) => Promise<void>
   deductCredit: () => Promise<boolean>
   refreshCredits: () => Promise<void>
 }
@@ -38,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isNewUser, setIsNewUser] = useState(false)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -56,14 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           setUserData(data)
           setIsNewUser(false)
+          // Check if onboarding is needed
+          setNeedsOnboarding(!data.profile?.completedOnboarding)
         } else {
-          // New user - needs to enter name
+          // New user - needs onboarding
           setIsNewUser(true)
+          setNeedsOnboarding(true)
           setUserData(null)
         }
       } else {
         setUserData(null)
         setIsNewUser(false)
+        setNeedsOnboarding(false)
       }
 
       setLoading(false)
@@ -103,6 +121,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsNewUser(false)
   }
 
+  const saveProfile = async (profile: UserProfile) => {
+    if (!user) return
+
+    const userDocRef = doc(db, 'users', user.uid)
+
+    if (isNewUser) {
+      // New user - create document with profile
+      const newUserData: UserData = {
+        name: profile.name,
+        email: user.email || '',
+        credits: 10,
+        createdAt: serverTimestamp(),
+        profile
+      }
+      await setDoc(userDocRef, newUserData)
+      setUserData(newUserData)
+      setIsNewUser(false)
+    } else {
+      // Existing user - update profile
+      await updateDoc(userDocRef, {
+        name: profile.name,
+        profile
+      })
+      setUserData(prev => prev ? { ...prev, name: profile.name, profile } : null)
+    }
+
+    setNeedsOnboarding(false)
+  }
+
   const deductCredit = async (): Promise<boolean> => {
     if (!user || !userData || userData.credits <= 0) return false
 
@@ -139,11 +186,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userData,
       loading,
       isNewUser,
+      needsOnboarding,
       signInWithGoogle,
       signInWithEmail,
       signUpWithEmail,
       logout,
       saveUserName,
+      saveProfile,
       deductCredit,
       refreshCredits
     }}>

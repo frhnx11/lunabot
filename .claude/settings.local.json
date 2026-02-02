@@ -7,7 +7,8 @@
       "WebSearch",
       "WebFetch(domain:openrouter.ai)",
       "WebFetch(domain:elevenlabs.io)",
-      "WebFetch(domain:help.elevenlabs.io)"
+      "WebFetch(domain:help.elevenlabs.io)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

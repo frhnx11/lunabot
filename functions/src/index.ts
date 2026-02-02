@@ -161,6 +161,86 @@ export const verifyPayment = onRequest(
   });
 });
 
+// Helper to build personal context from user profile
+function buildPersonalContext(profile: {
+  name?: string;
+  occupation?: string;
+  personality?: string;
+  interests?: string[];
+  lookingFor?: string;
+  additionalInfo?: string;
+} | undefined, userName?: string): string {
+  if (!profile) return "";
+
+  const parts: string[] = [];
+
+  const name = profile.name || userName;
+  if (name) {
+    parts.push(`You are talking to ${name}.`);
+  }
+
+  if (profile.occupation) {
+    const occupationLabels: Record<string, string> = {
+      student: "a student",
+      working: "a working professional",
+      homemaker: "a homemaker",
+      creative: "a creative/freelancer",
+      figuring: "someone figuring things out",
+    };
+    parts.push(`They are ${occupationLabels[profile.occupation] ||
+      profile.occupation}.`);
+  }
+
+  if (profile.personality) {
+    const personalityLabels: Record<string, string> = {
+      cheerful: "cheerful and outgoing",
+      calm: "calm and laid-back",
+      thoughtful: "thoughtful and quiet",
+      anxious: "a bit anxious but trying their best",
+      chaotic: "full of chaotic energy",
+    };
+    parts.push(`They describe themselves as ${
+      personalityLabels[profile.personality] || profile.personality}.`);
+  }
+
+  if (profile.interests && profile.interests.length > 0) {
+    const interestLabels: Record<string, string> = {
+      tech: "tech/coding",
+      gaming: "gaming",
+      reading: "reading",
+      music: "music",
+      movies: "movies/shows",
+      food: "coffee/food",
+      fitness: "fitness",
+      art: "art/creative stuff",
+    };
+    const interestNames = profile.interests.map((i) =>
+      interestLabels[i] || i);
+    parts.push(`They're into ${interestNames.join(", ")}.`);
+  }
+
+  if (profile.lookingFor) {
+    const lookingForLabels: Record<string, string> = {
+      talk: "someone to talk to",
+      relax: "help relaxing and destressing",
+      companionship: "companionship and warmth",
+      fun: "fun and playful conversations",
+    };
+    parts.push(`They're looking for ${
+      lookingForLabels[profile.lookingFor] || profile.lookingFor}.`);
+  }
+
+  if (profile.additionalInfo) {
+    parts.push(`Additional context: ${profile.additionalInfo}`);
+  }
+
+  if (parts.length === 0) return "";
+
+  return `## About the person you're talking to\n${parts.join(" ")}\n\n` +
+    "Remember these details naturally in conversation. " +
+    "Don't explicitly say you 'remember' things - just know them.\n\n";
+}
+
 // Chat function - proxies DeepInfra API
 export const chat = onRequest(
   {secrets: [deepinfraApiKey]},
@@ -175,15 +255,21 @@ export const chat = onRequest(
         // Verify user is authenticated
         await verifyAuthToken(req);
 
-        const {message, history, systemPrompt} = req.body;
+        const {message, history, systemPrompt, profile} = req.body;
 
         if (!message || !systemPrompt) {
           res.status(400).json({error: "Missing message or systemPrompt"});
           return;
         }
 
+        // Build personal context from profile (sent from frontend)
+        const personalContext = buildPersonalContext(profile, profile?.name);
+
+        // Build enhanced system prompt with personal context
+        const enhancedSystemPrompt = personalContext + systemPrompt;
+
         const messages = [
-          {role: "system", content: systemPrompt},
+          {role: "system", content: enhancedSystemPrompt},
           ...(history || []).map((msg: {role: string; content: string}) => ({
             role: msg.role,
             content: msg.content,

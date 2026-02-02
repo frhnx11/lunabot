@@ -10,9 +10,11 @@ interface SceneProps {
   speak: boolean
   onSpeakEnd: () => void
   avatarPath: string
+  danceAnimation: string | null
+  onDanceEnd: () => void
 }
 
-export function Scene({ audioUrl, alignment, speak, onSpeakEnd, avatarPath }: SceneProps) {
+export function Scene({ audioUrl, alignment, speak, onSpeakEnd, avatarPath, danceAnimation, onDanceEnd }: SceneProps) {
   return (
     <Canvas
       camera={{ position: [0, 0.8, 1.5], fov: 50 }}
@@ -30,6 +32,8 @@ export function Scene({ audioUrl, alignment, speak, onSpeakEnd, avatarPath }: Sc
           onSpeakEnd={onSpeakEnd}
           avatarPath={avatarPath}
           position={[0, -1, 0]}
+          danceAnimation={danceAnimation}
+          onDanceEnd={onDanceEnd}
         />
       </Suspense>
       <OrbitControls target={[0, 0.5, 0]} enablePan={false} />
